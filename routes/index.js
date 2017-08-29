@@ -52,7 +52,7 @@ router.get('/scrape8a', function(req,res,next){
 
 	//xpaths of information on scorecard route search page
 	var xpath_base = '//*[@id="form1"]//div[4]//table[3]//tbody//tr['
-	var row_index_offset = 3;
+	var row_index_offset = 3; //this is the index of the first climb on a user's scorecard
 	var climb_names_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]';
 	var climb_name_xpath = function(climb_index){
 		var index_string = '' + (row_index_offset + climb_index);
@@ -81,39 +81,31 @@ router.get('/scrape8a', function(req,res,next){
 	var process_climb_info = function(info_xpath, info_type, info_json, cb){
 		var info_elt_promise = driver.findElement(webdriver.By.xpath(info_xpath));
 		info_elt_promise.then(function(info_elt){
-			// info_elt.forEach(function(info_elt){ //use this when you are using driver.findElements (not for a single element)
 			info_elt.getText().then(function(info_text){
 				info_json[info_type] = info_text;
 				cb();
 			});
-			// });
 		});
 	}
-	// get_climbs_info(climb_crags_xpath,'crags');
 
-	var climbs_info = [];
-	// get_climbs_info(climb_names_xpath,'names')
+	//Add all the user's climbs to the database!
+	//start by getting all the names
 	var names_promise = driver.findElements(webdriver.By.xpath(climb_names_xpath));
 	names_promise.then(function(names){
 		names.forEach(function(name_elt, climb_index){
 			name_elt.getText().then(function(name_text){
 				var info = {'name':name_text};
-				// console.log('name_text: ' + name_text + ', index: ' + climb_index);
+				//add grade to info json
 				var grade_xpath = climb_grade_xpath(climb_index);
-				// driver.findElement(webdriver.By.xpath(grade_xpath)).then(function(grade){
-				// 	grade.getText().then(function(grade_text){
-				// 		info['grade'] = grade_text;
-				// 		console.log(info)
-
-				// 	});
-				// });
 				process_climb_info(grade_xpath, 'grade', info, function(){
+					//add date to info json
 					var date_xpath = climb_date_xpath(climb_index);
 					process_climb_info(date_xpath, 'date', info, function(){
+						//add crag to info json
 						var crag_xpath = climb_crag_xpath(climb_index);
 						process_climb_info(crag_xpath, 'crag', info, function(){
 							console.log(JSON.stringify(info));
-							//TODO add to database
+							//TODO add ascent to database
 						});
 					});
 				});
