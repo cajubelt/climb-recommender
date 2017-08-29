@@ -57,7 +57,7 @@ router.get('/scrape8a', function(req,res,next){
 	// });
 	//NOTE: this xpath seems to be only for the first climb name (<i> tag not present in following climb rows)
 
-	/*WORKING code block that gets and logs the names of each ascent on the page (except the first!) */
+	/*WORKING code block that gets and logs the names of each ascent on the page (EXCEPT the first!) */
 	// var climb_names_promise = driver.findElements(webdriver.By.xpath('//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]//a'));
 	// climb_names_promise.then(function(climb_names){
 	// 	climb_names.forEach(function(name_promise){
@@ -67,7 +67,15 @@ router.get('/scrape8a', function(req,res,next){
 	// 	});
 	// });
 
-	
+	/*WORKING code block that gets and logs the dates of each ascent on the page (INCLUDING the first!) */
+	var climb_dates_promise = driver.findElements(webdriver.By.xpath('//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i'));
+	climb_dates_promise.then(function(climb_dates){
+		climb_dates.forEach(function(date_promise){
+			date_promise.getText().then(function(date_text){
+				console.log(date_text);
+			});
+		});
+	});
 
 	//report the name of the page reached
 	driver.getTitle().then(function(title){
