@@ -73,18 +73,50 @@ router.get('/scrape8a', function(req,res,next){
 		var index_string = '' + (row_index_offset + climb_index);
 		return xpath_base + index_string + ']//td[6]//span//a';
 	}
-	//TODO get quality-stars rating
+	var climb_stars_ratings_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[9]';
+	var climb_stars_rating_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[9]'
+	}
 	//TODO get recommended/not rating
+	var climb_rec_statuses_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[5]//img';
+	var climb_rec_status_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[5]//img';
+	}
+	////*[@id="form1"]/div[4]/table[3]/tbody/tr[5]/td[5]/img
 
 	//Add the text of information of a specified type to info_json with key info_type, 
 	//	given its xpath on the scorecard route search page
 	var process_climb_info = function(info_xpath, info_type, info_json, cb){
 		var info_elt_promise = driver.findElement(webdriver.By.xpath(info_xpath));
 		info_elt_promise.then(function(info_elt){
-			info_elt.getText().then(function(info_text){
-				info_json[info_type] = info_text;
-				cb();
-			});
+			if (info_type == 'rec_status'){ //true if user recommends, false otherwise
+				info_elt.getAttribute('src').then(function(src){
+					if (src){
+						var recommended = src.includes('1');
+						info_json['rec_status'] = recommended;
+					} 
+					cb();
+					//TODO handle case where no src found (rec_status table entry not there?)
+				});
+			} else {
+				info_elt.getText().then(function(info_text){
+					var info_value = info_text;
+
+					//assign the value of 'stars_rating' to number of stars
+					if (info_type == 'stars_rating'){
+						if (info_text == ' '){
+							info_value = 0;
+						} else {
+							info_value = info_text.length;
+						}
+					}
+					//otherwise keep the value as the text
+					info_json[info_type] = info_value;
+					cb();
+				});
+			}
 		});
 	}
 
@@ -104,8 +136,16 @@ router.get('/scrape8a', function(req,res,next){
 						//add crag to info json
 						var crag_xpath = climb_crag_xpath(climb_index);
 						process_climb_info(crag_xpath, 'crag', info, function(){
-							console.log(JSON.stringify(info));
-							//TODO add ascent to database
+							//add stars_rating to info json
+							var stars_rating_xpath = climb_stars_rating_xpath(climb_index);
+							process_climb_info(stars_rating_xpath, 'stars_rating', info, function(){
+								//add rec_status to info json
+								var rec_status_xpath = climb_rec_status_xpath(climb_index);
+								process_climb_info(rec_status_xpath, 'rec_status', info, function(){
+									console.log(JSON.stringify(info));
+									//TODO add ascent to database
+								});
+							});
 						});
 					});
 				});
