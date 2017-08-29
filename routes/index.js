@@ -50,32 +50,24 @@ router.get('/scrape8a', function(req,res,next){
 	var by_date_link = driver.findElement(webdriver.By.id('HyperLinkOrderByDate'));
 	by_date_link.click();
 
-	/*WORKING example of getting and logging the first climb name from a nonempty of ascents */
-	// var gb_climb_elt = driver.findElement(webdriver.By.xpath('//*[@id="form1"]//div[4]//table[3]//tbody//tr[3]//td[4]//span[2]//i//a')).getText();
-	// gb_climb_elt.then(function(name){ 
-	// 	console.log(name);
-	// });
-	//NOTE: this xpath seems to be only for the first climb name (<i> tag not present in following climb rows)
-
-	/*WORKING code block that gets and logs the names of each ascent on the page (EXCEPT the first!) */
-	// var climb_names_promise = driver.findElements(webdriver.By.xpath('//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]//a'));
-	// climb_names_promise.then(function(climb_names){
-	// 	climb_names.forEach(function(name_promise){
-	// 		name_promise.getText().then(function(name_text){
-	// 			console.log(name_text);
-	// 		});
-	// 	});
-	// });
-
-	/*WORKING code block that gets and logs the dates of each ascent on the page (INCLUDING the first!) */
-	var climb_dates_promise = driver.findElements(webdriver.By.xpath('//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i'));
-	climb_dates_promise.then(function(climb_dates){
-		climb_dates.forEach(function(date_promise){
-			date_promise.getText().then(function(date_text){
-				console.log(date_text);
+	//Get the column of information of a specified type, given its xpath on the scorecard route search page
+	var get_climbs_info = function(info_xpath, info_type){
+		var info_elts_promise = driver.findElements(webdriver.By.xpath(info_xpath));
+		info_elts_promise.then(function(info_elts){
+			info_elts.forEach(function(info_elt){
+				info_elt.getText().then(function(info_text){
+					console.log(info_text);
+					//TODO add info to database
+				});
 			});
 		});
-	});
+	}
+
+	var climb_names_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]';
+	var climb_grades_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[2]//b';
+	var climb_dates_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i';
+	var climb_crags_xpath = '//*[@id="form1"]//div[4]/table[3]//tbody//tr//td[6]//span//a';
+	get_climbs_info(climb_crags_xpath,'crags');
 
 	//report the name of the page reached
 	driver.getTitle().then(function(title){
