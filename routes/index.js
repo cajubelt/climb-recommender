@@ -50,24 +50,76 @@ router.get('/scrape8a', function(req,res,next){
 	var by_date_link = driver.findElement(webdriver.By.id('HyperLinkOrderByDate'));
 	by_date_link.click();
 
-	//Get the column of information of a specified type, given its xpath on the scorecard route search page
-	var get_climbs_info = function(info_xpath, info_type){
-		var info_elts_promise = driver.findElements(webdriver.By.xpath(info_xpath));
-		info_elts_promise.then(function(info_elts){
-			info_elts.forEach(function(info_elt){
-				info_elt.getText().then(function(info_text){
-					console.log(info_text);
-					//TODO add info to database
+	//xpaths of information on scorecard route search page
+	var xpath_base = '//*[@id="form1"]//div[4]//table[3]//tbody//tr['
+	var row_index_offset = 3;
+	var climb_names_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]';
+	var climb_name_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[4]//span[2]';
+	}
+	var climb_grades_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[2]//b';
+	var climb_grade_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[2]//b'
+	}
+	var climb_dates_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i';
+	var climb_date_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[1]//nobr//i';
+	}
+	var climb_crags_xpath = '//*[@id="form1"]//div[4]/table[3]//tbody//tr//td[6]//span//a';
+	var climb_crag_xpath = function(climb_index){
+		var index_string = '' + (row_index_offset + climb_index);
+		return xpath_base + index_string + ']//td[6]//span//a';
+	}
+	//TODO get quality-stars rating
+	//TODO get recommended/not rating
+
+	//Add the text of information of a specified type to info_json with key info_type, 
+	//	given its xpath on the scorecard route search page
+	var process_climb_info = function(info_xpath, info_type, info_json, cb){
+		var info_elt_promise = driver.findElement(webdriver.By.xpath(info_xpath));
+		info_elt_promise.then(function(info_elt){
+			// info_elt.forEach(function(info_elt){ //use this when you are using driver.findElements (not for a single element)
+			info_elt.getText().then(function(info_text){
+				info_json[info_type] = info_text;
+				cb();
+			});
+			// });
+		});
+	}
+	// get_climbs_info(climb_crags_xpath,'crags');
+
+	var climbs_info = [];
+	// get_climbs_info(climb_names_xpath,'names')
+	var names_promise = driver.findElements(webdriver.By.xpath(climb_names_xpath));
+	names_promise.then(function(names){
+		names.forEach(function(name_elt, climb_index){
+			name_elt.getText().then(function(name_text){
+				var info = {'name':name_text};
+				// console.log('name_text: ' + name_text + ', index: ' + climb_index);
+				var grade_xpath = climb_grade_xpath(climb_index);
+				// driver.findElement(webdriver.By.xpath(grade_xpath)).then(function(grade){
+				// 	grade.getText().then(function(grade_text){
+				// 		info['grade'] = grade_text;
+				// 		console.log(info)
+
+				// 	});
+				// });
+				process_climb_info(grade_xpath, 'grade', info, function(){
+					var date_xpath = climb_date_xpath(climb_index);
+					process_climb_info(date_xpath, 'date', info, function(){
+						var crag_xpath = climb_crag_xpath(climb_index);
+						process_climb_info(crag_xpath, 'crag', info, function(){
+							console.log(JSON.stringify(info));
+							//TODO add to database
+						});
+					});
 				});
 			});
 		});
-	}
-
-	var climb_names_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]';
-	var climb_grades_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[2]//b';
-	var climb_dates_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i';
-	var climb_crags_xpath = '//*[@id="form1"]//div[4]/table[3]//tbody//tr//td[6]//span//a';
-	get_climbs_info(climb_crags_xpath,'crags');
+	});
 
 	//report the name of the page reached
 	driver.getTitle().then(function(title){
