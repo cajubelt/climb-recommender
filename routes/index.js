@@ -143,6 +143,7 @@ router.get('/scrape8a', function(req,res,next){
 								var rec_status_xpath = climb_rec_status_xpath(climb_index);
 								process_climb_info(rec_status_xpath, 'rec_status', info, function(){
 									console.log(JSON.stringify(info));
+									//TODO add ascent_type to database (redpt, flash, onsight)
 									//TODO add ascent to database
 								});
 							});

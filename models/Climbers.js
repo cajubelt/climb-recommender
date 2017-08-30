@@ -32,7 +32,7 @@ var Climbers = (function(climberModel) {
     var that = {};
 
     that.addClimber = function(name, is_female, city, country, optional_info, callback){
-        if (!name || !city || !country || !optional_info){
+        if (!name || !city || !country || !(typeof(is_female) == 'boolean') || !optional_info){
             callback({msg: errorUtils.InvalidInputs()});
         } else {
             climberModel.findOne({name:name, is_female: is_female, city: city, country: country}, function(err, climber){
