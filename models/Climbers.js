@@ -31,30 +31,8 @@ var Climbers = (function(climberModel) {
 
     var that = {};
 
-    // that.addAdmin = function(emailAddress, password, callback) {
-    //     var inputError = checkForValidInputs(emailAddress, password);
-    //     if (inputError) {
-    //         callback({msg: inputError});
-    //     } else {
-    //         adminModel.findOne({emailAddress: emailAddress}, function(err, admin) {
-    //             if (admin) {
-    //                 callback({msg: errorUtils.DuplicateAccount()});
-    //             } else {
-    //                 var admin = new adminModel({
-    //                     emailAddress: emailAddress,
-    //                     password: password
-    //                 });
-    //                 admin.save(function(err, newAdmin) {
-    //                     if (err) callback({msg: err});
-    //                     else callback(null, newAdmin);
-    //                 })
-    //             }
-    //         });
-    //     }
-    // };
-
     that.addClimber = function(name, is_female, city, country, optional_info, callback){
-        if (!name || !city || !country || !optional_info || !callback){
+        if (!name || !city || !country || !optional_info){
             callback({msg: errorUtils.InvalidInputs()});
         } else {
             climberModel.findOne({name:name, is_female: is_female, city: city, country: country}, function(err, climber){
@@ -76,6 +54,24 @@ var Climbers = (function(climberModel) {
             });
         }
     }
+
+    that.getClimberByName = function(name, callback){
+        if (!name) {
+            callback({msg: errorUtils.InvalidInputs()});
+        } else {
+            climberModel.findOne({name: name}, function(climber){
+                if (!climber){
+                    callback({msg:errorUtils.ClimberlessName()});
+                } else {
+                    callback(null, climber);
+                }
+            });
+        }
+    }
+
+    // that.getClimberById = function(climber_id, callback){
+    //     //TODO implement me
+    // }
 
     Object.freeze(that);
     return that;
