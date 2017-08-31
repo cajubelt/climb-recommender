@@ -59,11 +59,14 @@ var Climbers = (function(climberModel) {
         if (!name) {
             callback({msg: errorUtils.InvalidInputs()});
         } else {
+            console.log('looking for climber by name');
             //TODO handle situation where multiple climbers have same name
-            climberModel.findOne({name: name}, function(climber){
+            climberModel.findOne({name: name}).exec(function(climber){
                 if (!climber){
+                    console.log('no climber found with that name');
                     callback({msg:errorUtils.ClimberlessName()});
                 } else {
+                    console.log('climber found');
                     callback(null, climber);
                 }
             });

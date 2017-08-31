@@ -4,11 +4,19 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+// var webpackDevHelper = require('./hotReload.js');
 
+
+//require routes
 var index = require('./routes/index');
 var users = require('./routes/users');
 
+var mongoose = require('mongoose');
 var app = express();
+
+mongoose.connect('mongodb://localhost/climbRecdb');
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
