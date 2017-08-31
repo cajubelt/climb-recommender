@@ -59,6 +59,7 @@ var Climbers = (function(climberModel) {
         if (!name) {
             callback({msg: errorUtils.InvalidInputs()});
         } else {
+            //TODO handle situation where multiple climbers have same name
             climberModel.findOne({name: name}, function(climber){
                 if (!climber){
                     callback({msg:errorUtils.ClimberlessName()});

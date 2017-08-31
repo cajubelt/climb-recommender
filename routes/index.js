@@ -4,6 +4,8 @@ var webdriver = require('selenium-webdriver'),
     By = webdriver.By,
     until = webdriver.until;
 
+var Constants = require('../Constants');
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
@@ -50,41 +52,8 @@ router.get('/scrape8a', function(req,res,next){
 	var by_date_link = driver.findElement(webdriver.By.id('HyperLinkOrderByDate'));
 	by_date_link.click();
 
-	//xpaths of information on scorecard route search page
-	var xpath_base = '//*[@id="form1"]//div[4]//table[3]//tbody//tr['
-	var row_index_offset = 3; //this is the index of the first climb on a user's scorecard
+	//xpath of climbs on the scorecard page (routes, all time, ordered by date)
 	var climb_names_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[4]//span[2]';
-	var climb_name_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[4]//span[2]';
-	}
-	var climb_grades_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[2]//b';
-	var climb_grade_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[2]//b'
-	}
-	var climb_dates_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[1]//nobr//i';
-	var climb_date_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[1]//nobr//i';
-	}
-	var climb_crags_xpath = '//*[@id="form1"]//div[4]/table[3]//tbody//tr//td[6]//span//a';
-	var climb_crag_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[6]//span//a';
-	}
-	var climb_stars_ratings_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[9]';
-	var climb_stars_rating_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[9]'
-	}
-	//TODO get recommended/not rating
-	var climb_rec_statuses_xpath = '//*[@id="form1"]//div[4]//table[3]//tbody//tr//td[5]//img';
-	var climb_rec_status_xpath = function(climb_index){
-		var index_string = '' + (row_index_offset + climb_index);
-		return xpath_base + index_string + ']//td[5]//img';
-	}
-	////*[@id="form1"]/div[4]/table[3]/tbody/tr[5]/td[5]/img
 
 	//Add the text of information of a specified type to info_json with key info_type, 
 	//	given its xpath on the scorecard route search page
@@ -100,6 +69,17 @@ router.get('/scrape8a', function(req,res,next){
 					cb();
 					//TODO handle case where no src found (rec_status table entry not there?)
 				});
+			} else if (info_type == 'ascent_type'){
+				info_elt.getAttribute('src').then(function(src){
+					// console.log('handling ascent type')
+					if (src) {
+						var ascent_type = Constants.SCORECARD_ASCENT_TYPE_BY_IMG_SRC[src];
+						if (!ascent_type){ console.log('ascent type not found'); }
+						info_json['ascent_type'] = ascent_type;
+					} else {console.log('src not found');}
+					cb();
+					//TODO handle case where no src round (climb not completed?)
+				})
 			} else {
 				info_elt.getText().then(function(info_text){
 					var info_value = info_text;
@@ -120,34 +100,35 @@ router.get('/scrape8a', function(req,res,next){
 		});
 	}
 
-	//Add all the user's climbs to the database!
-	//start by getting all the names
+	//Add all the ascents associated with a given user to the database
+	//start by getting all the climb names
 	var names_promise = driver.findElements(webdriver.By.xpath(climb_names_xpath));
 	names_promise.then(function(names){
 		names.forEach(function(name_elt, climb_index){
 			name_elt.getText().then(function(name_text){
 				var info = {'name':name_text};
-				//add grade to info json
-				var grade_xpath = climb_grade_xpath(climb_index);
-				process_climb_info(grade_xpath, 'grade', info, function(){
-					//add date to info json
-					var date_xpath = climb_date_xpath(climb_index);
-					process_climb_info(date_xpath, 'date', info, function(){
-						//add crag to info json
-						var crag_xpath = climb_crag_xpath(climb_index);
-						process_climb_info(crag_xpath, 'crag', info, function(){
-							//add stars_rating to info json
-							var stars_rating_xpath = climb_stars_rating_xpath(climb_index);
-							process_climb_info(stars_rating_xpath, 'stars_rating', info, function(){
-								//add rec_status to info json
-								var rec_status_xpath = climb_rec_status_xpath(climb_index);
-								process_climb_info(rec_status_xpath, 'rec_status', info, function(){
-									console.log(JSON.stringify(info));
-									//TODO add ascent_type to database (redpt, flash, onsight)
-									//TODO add ascent to database
-								});
-							});
-						});
+
+				var info_keys = Object.keys(Constants.SCORECARD_XPATH_SUFFIXES);
+				var num_info_keys_unprocessed = info_keys.length;
+
+				//map types of info to xpath for their cell in the scorecard table
+				info_keys.map(function(key){
+					var prefix = Constants.SCORECARD_XPATH_PREFIX;
+					var elt_index = Constants.SCORECARD_XPATH_ROW_INDEX_OFFSET + climb_index; 
+					var suffix = Constants.SCORECARD_XPATH_SUFFIXES[key];
+					var xpath =  prefix + elt_index + suffix;
+					return [key, xpath];
+				}).forEach(function(key_xpath_pair, key_index){
+					var info_key = key_xpath_pair[0];
+					var info_xpath = key_xpath_pair[1];
+					process_climb_info(info_xpath, info_key, info, function(){
+						num_info_keys_unprocessed -= 1;
+
+						//when all info has been processed, add ascent to database
+						if (num_info_keys_unprocessed == 0){
+							console.log(JSON.stringify(info));
+							return; //TODO add to database
+						}
 					});
 				});
 			});

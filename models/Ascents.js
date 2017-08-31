@@ -9,6 +9,8 @@ var ascentSchema = Schema({
     stars_rating: Number,
     date: Date,
     ascent_type: String, //mapped to strings in Constants.js
+    notes: String,
+    //TODO add notes field
 });
 
 var ascentModel = mongoose.model('Ascent', ascentSchema);
@@ -25,16 +27,8 @@ var Climbs = require('./Climbs.js');
 var Ascents = (function(ascentModel) {
     var that = {};
 
-    that.addAscent = function(climber, climb, rec_status, stars_rating, date, ascent_type, callback){
-    	// console.log('trying to add ascent with parameters: ');
-    	// console.log('climber: ' + climber);
-    	// console.log('climb: ' + climb);
-    	// console.log('rec_status: ' + rec_status);
-    	// console.log('stars_rating: ' + stars_rating);
-    	// console.log('date: ' + date);
-    	// console.log('ascent_type: ' + ascent_type);
-
-    	if (!climber || !climb || !(typeof(rec_status) =='boolean') || !date || !ascent_type || !(typeof(stars_rating) == 'number')){
+    that.addAscent = function(climber, climb, rec_status, stars_rating, date, ascent_type, notes, callback){
+    	if (!climber || !climb || !(typeof(rec_status) =='boolean') || !date || !ascent_type || !(typeof(stars_rating) == 'number' || !notes)){
     		callback({msg: errorUtils.InvalidInputs()});
     	} else {
     		ascentModel.findOne({climber: climber, climb: climb}, function(ascent){
