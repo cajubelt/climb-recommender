@@ -28,6 +28,33 @@ var Constants = {
 		'https://www.8a.nu/scorecard/images/56f871c6548ae32aaa78672c1996df7f.gif' : 'flash',
 	},
 
+	// REQUIRED_PROFILE_INFO_IDS : {
+	// 	is_female: 'LabelUserName', //note that (f) is present in the name if the user is female
+	//     city: 'LabelUserCity',
+	//     country: 'LabelUserCountry',
+	//     8a_user_id: 'LabelUserId',
+	// },
+
+	PROFILE_INFO_IDS : {
+		//required
+		is_female: 'LabelUserName', //note that (f) is present in the name if the user is female
+	    city: 'LabelUserCity',
+	    country: 'LabelUserCountry',
+	    eightA_user_id: 'LabelUserId',
+
+	    //optional
+		birthday : 'LabelUserDataBirth',
+		height: 'LabelUserDataHeight',
+		weight: 'LabelUserDataWeight',
+		started_climbing: 'LabelUserDataStartedClimbing',
+		occupation: 'LabelUserDataOccupation',
+		other_interests: 'LabelUserDataInterrests',
+		best_comp_result: 'LabelUserDataBestResult',
+		best_climbing_area: 'LabelUserDataBestClimbingArea',
+		sponsor_links: 'LabelUserDataLinks',
+		can_guide_areas: 'LabelUserDataGuide',
+	},
+
 	//index of first meaningful row of the 8a scorecard table
 	SCORECARD_XPATH_ROW_INDEX_OFFSET : 3,
 }

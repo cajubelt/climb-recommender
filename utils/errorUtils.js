@@ -27,6 +27,11 @@ var error_utils = (function() {
         return "No climber with that name was found in the database."
     }
 
+    //no 8a user with that name
+    that.userlessName = function(){
+        return "No climber with that name was found on 8a.nu."
+    }
+
 
     Object.freeze(that);
     return that;

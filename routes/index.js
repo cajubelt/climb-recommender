@@ -15,6 +15,35 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+//from the user's profile page, add user to the database
+//	name must be the name of a user on 8a
+//  driver must be on the profile page of user with name given
+var process_user_info = function(name, driver, cb) {
+	var user_info_json = {'name': name};
+	var info_to_process = Object.keys(Constants.PROFILE_INFO_IDS);
+	var info_keys_remaining = info_to_process.length;
+
+	info_to_process.forEach(function(key){
+		var info_element = driver.findElement(webdriver.By.id(Constants.PROFILE_INFO_IDS[key]));
+		info_element.getText().then(function(text){
+			if (key == 'is_female'){
+				//calculate is_female and add to user_info_json
+				var is_female = text.includes('(f)');
+				user_info_json.is_female = is_female;
+			} else {
+				//add text to user_info_json (if not blank)
+				if (text){user_info_json[key] = text;}
+			}
+			//add to database if last key processed
+			info_keys_remaining -= 1;
+			if (info_keys_remaining == 0){
+				console.log('adding climber with info: ' + JSON.stringify(user_info_json));
+				Climbers.addClimber(user_info_json, cb);
+			}
+		});
+	});
+}
+
 //middleware to add climber profile info to the database before scraping their ascent history
 router.use('/scrape8a', function(req, res, next){
 	console.log('in middleware')
@@ -46,14 +75,18 @@ router.use('/scrape8a', function(req, res, next){
 				//Pull up profile of that climber (TODO (?) store the userID of the climber to more quickly access profile in future using 8a.nu/user/profile.aspx?UserID=<user_id>)
 				var profile_link = driver.findElement(webdriver.By.xpath('//*[contains(text(), "' + climber_name + '")]'));
 				//TODO check that profile_link is not null (i.e. climber with that name exists on 8a)
+				if (!profile_link){
+					utils.sendErrorResponse(res, errorUtils.userlessName(), 404);
+				} else {
+					profile_link.click();
 
-				profile_link.click();
-
-				//TODO see if this works
-				req.body.driver = driver;
-
-				console.log('handing it over to post handler')
-				next();
+					var process_user_cb = function(){
+						req.body.driver = driver;
+						next();
+					}
+					
+					process_user_info(climber_name, driver, process_user_cb);
+				}
 			} else { //handle unknown errors
 				utils.sendErrorResponse(res, err.msg, err.code);
 			}
@@ -74,27 +107,6 @@ router.use('/scrape8a', function(req, res, next){
 // 	EXPECTS MIDDLEWARE TO PULL UP THE PROFILE FOR THE CLIMBER TO SCRAPE, PROVIDE DRIVER FOR IT IN REQ.BODY
 router.post('/scrape8a', function(req,res,next){
 	console.log('in handler');
-	var member_name = 'charlie andrews'; //TODO replace with req parameters
-	// var member_name = req.body.climber_name;
-
-	// var driver = new webdriver.Builder()
-	//     .forBrowser('chrome')
-	//     .build();
-
-	// //Navigate to route and member search page
-	// driver.get('https://www.8a.nu/scorecard/search.aspx');
-	// driver.switchTo().frame('main');
-
-	// //Search for climber (8a member) by name
-	// var climber_name = driver.findElement(webdriver.By.name('TextboxMemberName'));
-	// climber_name.sendKeys(member_name);
-	// // climber_name.submit();
-	// var search_button = driver.findElement(webdriver.By.name('ButtonSearchMember'));
-	// search_button.click();
-
-	// //Pull up profile of that climber (TODO (?) store the userID of the climber to more quickly access profile in future using 8a.nu/user/profile.aspx?UserID=<user_id>)
-	// var profile_link = driver.findElement(webdriver.By.xpath('//*[contains(text(), "Charlie Andrews")]'));
-	// profile_link.click();
 
 	var driver = req.body.driver;
 
