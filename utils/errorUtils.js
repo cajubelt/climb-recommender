@@ -32,6 +32,14 @@ var error_utils = (function() {
         return "No climber with that name was found on 8a.nu."
     }
 
+    that.unexpectedError = function(){
+        return "An unexpected error occurred."
+    }
+
+    that.NoAscentsByClimber = function(){
+        return "No ascents by that climber found in the database."
+    }
+
 
     Object.freeze(that);
     return that;

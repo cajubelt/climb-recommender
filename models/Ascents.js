@@ -10,7 +10,6 @@ var ascentSchema = Schema({
     date: Date,
     ascent_type: String, //mapped to strings in Constants.js
     notes: String,
-    //TODO add notes field
 });
 
 var ascentModel = mongoose.model('Ascent', ascentSchema);
@@ -45,7 +44,7 @@ var Ascents = (function(ascentModel) {
     				};
     				var ascent = new ascentModel(ascent_info);
     				ascent.save(function(err, newAscent){
-    					if (err) callback({msg: err});
+    					if (err) callback(err);
     					else callback(null, newAscent);
     				});
     			}
@@ -65,7 +64,7 @@ var Ascents = (function(ascentModel) {
     			model: "Climb",
     		}).exec(function(err, ascentResult){
     			if (err) {
-    				callback({msg:err});
+    				callback(err);
     			} else {
     				callback(null, ascentResult);
     			}
@@ -74,24 +73,24 @@ var Ascents = (function(ascentModel) {
     }
 
     //TODO test to see if ascents need to be populated with their info
-    that.getAscentsByClimberId = function(climberId, callback){
-    	if (!climberId){
+    that.getAscentsByClimber = function(climber, callback){
+    	if (!climber){
     		callback({msg: errorUtils.InvalidInputs()});
     	} else {
-    		ascentModel.find({climber: climberId}).exec(function(err, ascentsResult){
-    			if (err) callback({msg: err});
+    		ascentModel.find({climber: climber}).exec(function(err, ascentsResult){
+    			if (err) callback(err);
     			else callback(null, ascentsResult);
     		});
     	}
     }
 
     //TODO test to see if ascents need to be populated with their info
-    that.getAscentsByClimbId = function(climbId, callback){
+    that.getAscentsByClimb = function(climb, callback){
     	if (!climb){
     		callback({msg: errorUtils.InvalidInputs()});
     	} else {
-    		ascentModel.find({climber:climberId}).exec(function(err, ascentsResult){
-    			if (err) callback({msg: err});
+    		ascentModel.find({climb:climb}).exec(function(err, ascentsResult){
+    			if (err) callback(err);
     			else callback(null, ascentsResult);
     		});
     	}

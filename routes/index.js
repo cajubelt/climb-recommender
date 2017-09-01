@@ -80,9 +80,37 @@ router.use('/scrape8a', function(req, res, next){
 				} else {
 					profile_link.click();
 
-					var process_user_cb = function(){
-						req.body.driver = driver;
-						next();
+					var process_user_cb = function(err, climber){
+						if (err){
+							if (err.msg == errorUtils.DuplicateClimber() && climber){
+								//case where climber was already in database
+								//	(assumption: ascents are already added too)
+								driver.quit();
+								
+								//add ascents to response json and finish
+								Ascents.getAscentsByClimber(climber, function(err,ascents){
+									if (err) {utils.sendErrorResponse(res, err.msg, err.code);}
+									else {
+										utils.sendSuccessResponse(res, {
+											climber: climber,
+											ascents: ascents,
+										});
+									}
+								});
+							} else { 
+								//unknown database error
+								utils.sendErrorResponse(res, err.msg, 500); 
+							}
+						} else if (climber) {
+							//case where climber newly added to database
+							req.body.driver = driver;
+							req.body.climber = climber;
+							next();
+						} else {
+							//no climber given, yet no error reported (unexpected case)
+							var msg = errorUtils.unexpectedError();
+							utils.sendErrorResponse(res, msg, 500)
+						}
 					}
 					
 					process_user_info(climber_name, driver, process_user_cb);
@@ -91,8 +119,18 @@ router.use('/scrape8a', function(req, res, next){
 				utils.sendErrorResponse(res, err.msg, err.code);
 			}
 		} else if (climber) {
-			//if climber already in database, terminate process. (ascents should already have been added)
-			res.sendSuccessResponse(res, {climber: climber});
+			//climber already in database. get their ascents and finish. 
+			//  (ascents should have been added when the climber was)
+			Ascents.getAscentsByClimber(climber, function(err, ascents){
+				if (err){
+					utils.sendErrorResponse(res, err.msg, 500);
+				} else if (!ascents){
+					utils.sendErrorResponse(res, errorUtils.noAscentsByClimber(), 404);
+					//TODO handle case where a real 8a user has no ascents (i.e. not the apps fault that no ascents were stored)
+				} else {
+					utils.sendSuccessResponse(res, {climber: climber, ascents: ascents});
+				}
+			});
 
 			//(TODO later) if multiple climbers in database with given name, ask for more information about climber
 		} else {
@@ -104,7 +142,9 @@ router.use('/scrape8a', function(req, res, next){
 });
 
 //route to scrape the routes completed by a climber
-// 	EXPECTS MIDDLEWARE TO PULL UP THE PROFILE FOR THE CLIMBER TO SCRAPE, PROVIDE DRIVER FOR IT IN REQ.BODY
+// 	expects MIDDLEWARE TO PULL UP THE PROFILE FOR THE CLIMBER TO SCRAPE
+//  expects req.body to contain driver for browser window
+//  expects req.body.climber
 router.post('/scrape8a', function(req,res,next){
 	console.log('in handler');
 
@@ -144,7 +184,7 @@ router.post('/scrape8a', function(req,res,next){
 						info_json['ascent_type'] = ascent_type;
 					} else {console.log('src not found');}
 					cb();
-					//TODO handle case where no src round (climb not completed?)
+					//TODO handle case where no src found (climb not completed?)
 				})
 			} else {
 				info_elt.getText().then(function(info_text){
@@ -167,9 +207,12 @@ router.post('/scrape8a', function(req,res,next){
 	}
 
 	//Add all the ascents associated with a given user to the database
+
 	//start by getting all the climb names
 	var names_promise = driver.findElements(webdriver.By.xpath(climb_names_xpath));
 	names_promise.then(function(names){
+		var ascents_processed = [];
+
 		names.forEach(function(name_elt, climb_index){
 			name_elt.getText().then(function(name_text){
 				var info = {'name':name_text};
@@ -192,8 +235,32 @@ router.post('/scrape8a', function(req,res,next){
 
 						//when all info has been processed, add ascent to database
 						if (num_info_keys_unprocessed == 0){
-							console.log(JSON.stringify(info));
-							return; //TODO add to database
+							// console.log(JSON.stringify(info));
+							// return; //TODO add to database
+							Ascents.addAscent(
+								info.climber, 
+								info.climb, 
+								info.rec_status,
+								info.stars_rating,
+								info.date,
+								info.ascent_type,
+								info.notes,
+								function(err, ascent){
+									//handle database error
+									if (err){utils.sendErrorResponse(res,err.msg,500);}
+
+									//add ascent to completed list
+									ascents_processed.push(ascent);
+									//exit if last ascent processed
+									if (ascents_processed.length == names.length){
+										driver.quit();
+										utils.sendSuccessResponse(res, {
+											climber: req.body.climber,
+											ascents: ascents_processed,
+										});
+									}
+								}
+							);
 						}
 					});
 				});

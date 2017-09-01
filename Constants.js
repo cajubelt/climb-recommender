@@ -4,6 +4,7 @@ var Constants = {
 		FLASH: 'flash',
 		ONSIGHT: 'onsight',
 		INCOMPLETE: 'incomplete',
+		//TODO accommodate top rope
 	},
 
 	//prefix substring of the xpath of a cell in the 8a scorecard 
@@ -14,7 +15,7 @@ var Constants = {
 	SCORECARD_XPATH_SUFFIXES : {
 		// name : ']//td[4]//span[2]', //dont need this because of how scraper is implemented
 		grade : ']//td[2]//b',
-		date : ']//td[1]//nobr//i',
+		date : ']//td[1]//nobr', //used to be: ']//td[1]//nobr//i'
 		crag : ']//td[6]//span//a',
 		stars_rating : ']//td[9]',
 		rec_status : ']//td[5]//img',

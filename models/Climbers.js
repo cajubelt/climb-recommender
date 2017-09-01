@@ -39,7 +39,7 @@ var Climbers = (function(climberModel) {
         // } else {
         climberModel.findOne({eightA_user_id: climber_info_json.eightA_user_id}, function(err, climber){
             if (climber){
-                callback({msg: errorUtils.DuplicateClimber()});
+                callback({msg: errorUtils.DuplicateClimber()}, climber);
             } else {
                 var climber_info = JSON.parse(JSON.stringify(climber_info_json));
                 // climber_info.name = name;
@@ -62,10 +62,13 @@ var Climbers = (function(climberModel) {
         } else {
             console.log('looking for climber by name');
             //TODO handle situation where multiple climbers have same name
-            climberModel.findOne({name: name}).exec(function(climber){
-                if (!climber){
+            climberModel.findOne({name: name}).exec(function(err,climber){
+                //case where no climber found
+                if (err && !climber){
                     console.log('no climber found with that name');
                     callback({msg:errorUtils.ClimberlessName()});
+                } else if (err) {
+                    callback(err);
                 } else {
                     console.log('climber found');
                     callback(null, climber);
